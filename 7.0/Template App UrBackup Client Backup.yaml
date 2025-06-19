@@ -119,7 +119,7 @@ zabbix_export:
               trigger_prototypes:
                 - uuid: ad043a66ed684b12ab8b99e482110560
                   expression: |
-                    max(/Template App UrBackup Client Backup/backup.state[{#CLIENT}],{$BACKUP_TRIGGER_TIME:"{#CLIENT}"})<>1
+                    max(/Template App UrBackup Client Backup/backup.state[{#CLIENT}],{$BACKUP_TRIGGER_TIME:"{#CLIENT}"})=0
                     and {$BACKUP_TRIGGER_ENABLED:"{#CLIENT}"}=1
                   name: 'No successful backup for {#CLIENT} in the last {$BACKUP_TRIGGER_TIME:"{#CLIENT}"}'
                   priority: AVERAGE
