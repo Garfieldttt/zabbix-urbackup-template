@@ -117,6 +117,10 @@ zabbix_export:
                 - tag: Urbackup
                   value: Backup-State
               trigger_prototypes:
+                - uuid: e71b8c0982134aae8706fe9981f34b08
+                  expression: 'last(/Template App UrBackup Client Backup/backup.state[{#CLIENT}])=2'
+                  name: 'Backup status warning for {#CLIENT}: Completed with issues'
+                  priority: WARNING
                 - uuid: ad043a66ed684b12ab8b99e482110560
                   expression: |
                     max(/Template App UrBackup Client Backup/backup.state[{#CLIENT}],{$BACKUP_TRIGGER_TIME:"{#CLIENT}"})=0
