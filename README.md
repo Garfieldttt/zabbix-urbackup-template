@@ -58,10 +58,11 @@ For example, run it every 5 minutes (for testing; later consider changing to `*/
 
 ## ⚙️ Macros
 
-| Macro                        | Default Value | Description                                                                 |
-|------------------------------|----------------|-----------------------------------------------------------------------------|
-| `{$BACKUP_TRIGGER_ENABLED}`  | `1`            | Enables/disables per-client triggers                                        |
-| `{$BACKUP_TRIGGER_TIME}`     | `48h`          | Time threshold to trigger an alert if no valid backup exists                |
+| Macro                               | Default Value | Description                                                                                     |
+|------------------------------------|---------------|-------------------------------------------------------------------------------------------------|
+| `{$BACKUP_TRIGGER_ENABLED_ISSUES}`     | `1`           | Enables or disables the backup monitoring trigger. Set to 1 to activate the trigger, or 0 to disable it. |
+| `{$BACKUP_TRIGGER_ENABLED_NO_BACKUP}` | `1`           | Enables or disables the backup monitoring trigger. Set to 1 to activate the trigger, or 0 to disable it. |
+
 
 ---
 
