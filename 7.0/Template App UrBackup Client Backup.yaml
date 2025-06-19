@@ -126,14 +126,12 @@ zabbix_export:
                   value: Backup-State
               trigger_prototypes:
                 - uuid: e71b8c0982134aae8706fe9981f34b08
-                  expression: 'last(/Template App UrBackup Client Backup/backup.state[{#CLIENT}])=2'
+                  expression: 'last(/Template App UrBackup Client Backup/backup.state[{#CLIENT}])=2 and {$BACKUP_TRIGGER_ENABLED_ISSUES:"{#CLIENT}"}=1'
                   name: 'Backup status warning for {#CLIENT}: Completed with issues'
                   priority: WARNING
                 - uuid: ad043a66ed684b12ab8b99e482110560
-                  expression: |
-                    max(/Template App UrBackup Client Backup/backup.state[{#CLIENT}],{$BACKUP_TRIGGER_TIME:"{#CLIENT}"})=0
-                    and {$BACKUP_TRIGGER_ENABLED:"{#CLIENT}"}=1
-                  name: 'No successful backup for {#CLIENT} in the last {$BACKUP_TRIGGER_TIME:"{#CLIENT}"}'
+                  expression: 'last(/Template App UrBackup Client Backup/backup.state[{#CLIENT}])=0 and {$BACKUP_TRIGGER_ENABLED_NO_BACKUP:"{#CLIENT}"}=1'
+                  name: 'No successful backup for {#CLIENT}: No recent backup'
                   priority: AVERAGE
                   manual_close: 'YES'
             - uuid: 398fece9e36742a6bbe8e21158ca27b7
@@ -168,12 +166,12 @@ zabbix_export:
               parameters:
                 - '$[*]'
       macros:
-        - macro: '{$BACKUP_TRIGGER_ENABLED}'
+        - macro: '{$BACKUP_TRIGGER_ENABLED_ISSUES}'
           value: '1'
           description: 'Enables or disables the backup monitoring trigger. Set to 1 to activate the trigger, or 0 to disable it.'
-        - macro: '{$BACKUP_TRIGGER_TIME}'
-          value: 48h
-          description: 'Time period without a valid backup before triggering an alert.'
+        - macro: '{$BACKUP_TRIGGER_ENABLED_NO_BACKUP}'
+          value: '1'
+          description: 'Enables or disables the backup monitoring trigger. Set to 1 to activate the trigger, or 0 to disable it.'
       valuemaps:
         - uuid: ebeb22b4a13c49588f3e198d0e9b8de8
           name: BACKUP-STATE
