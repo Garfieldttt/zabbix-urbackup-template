@@ -111,6 +111,14 @@ zabbix_export:
                   parameters:
                     - failed
                     - '3'
+                - type: STR_REPLACE
+                  parameters:
+                    - 'not supported'
+                    - '4'
+                - type: STR_REPLACE
+                  parameters:
+                    - unknown
+                    - '5'
               master_item:
                 key: 'vfs.file.contents[/var/log/urbackup-backups.json]'
               tags:
@@ -178,6 +186,10 @@ zabbix_export:
               newvalue: 'Completed with issues'
             - value: '3'
               newvalue: Failed
+            - value: '4'
+              newvalue: 'Not supported'
+            - value: '5'
+              newvalue: Unknown
         - uuid: 0a0aa9b6c9714c479f8e102bcf0a4afa
           name: CONNECTIVITY-STATE
           mappings:
