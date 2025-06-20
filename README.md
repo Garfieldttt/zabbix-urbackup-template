@@ -1,5 +1,7 @@
 # Zabbix Integration: UrBackup Client Monitoring
 
+> ⚠️ **Note:** This integration has been tested **only on Debian-based operating systems** (e.g., Debian, Ubuntu). Use on other distributions **may require adjustments**.
+
 **Template:** `Urbackup client backup status by zabbix agent active`  
 **Zabbix Version:** 7.0+  
 ---
