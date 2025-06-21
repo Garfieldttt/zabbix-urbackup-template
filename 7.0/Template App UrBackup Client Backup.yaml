@@ -119,7 +119,7 @@ zabbix_export:
                   parameters:
                     - unknown
                     - '5'
-                - type: REGEX
+                - type: STR_REPLACE
                   parameters:
                     - disabled
                     - '6'
