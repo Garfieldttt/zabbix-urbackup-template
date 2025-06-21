@@ -119,6 +119,10 @@ zabbix_export:
                   parameters:
                     - unknown
                     - '5'
+                - type: REGEX
+                  parameters:
+                    - disabled
+                    - '6'
               master_item:
                 key: 'vfs.file.contents[/var/log/urbackup-backups.json]'
               tags:
@@ -188,6 +192,8 @@ zabbix_export:
               newvalue: 'Not supported'
             - value: '5'
               newvalue: Unknown
+            - value: '6'
+              newvalue: Disabled
         - uuid: 0a0aa9b6c9714c479f8e102bcf0a4afa
           name: CONNECTIVITY-STATE
           mappings:
