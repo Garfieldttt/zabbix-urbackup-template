@@ -19,7 +19,7 @@ WITH latest_backups AS (
     COALESCE(l.errors, 0)   AS Errors,
     COALESCE(l.warnings, 0) AS Warnings,
     COALESCE(l.infos, 0)    AS Infos,
-    -- Neues Flag für Image-Backup: 1 wenn >0, sonst 0
+    -- Neues Bool‑Flag für Image‑Backups
     CASE WHEN COALESCE(l.image, 0) > 0 THEN 1 ELSE 0 END AS is_image,
     c.lastseen,
     c.file_ok,
@@ -38,12 +38,11 @@ WITH latest_backups AS (
   LEFT JOIN logs l   ON l.id = b.id
 )
 
--- 1) Alle neuesten Backups (File + Image) mit Status aus clients.file_ok / image_ok
+-- 1) Alle neuesten Backups (File + Image)
 SELECT
   id                                            AS Backup_ID,
   BaseClient
-    || CASE is_image WHEN 1 THEN ' Image-Backup' ELSE ' File-Backup' END
-                                                  AS Client,
+    || CASE is_image WHEN 1 THEN ' Image-Backup' ELSE ' File-Backup' END AS Client,
   CASE
     WHEN strftime('%s','now') - strftime('%s', lastseen) < 600 THEN 'Yes'
     ELSE 'No'
@@ -91,6 +90,8 @@ SELECT
   'never'                                       AS Backup_Time,
   '0'                                           AS Backup_Timestamp,
   CASE
+    WHEN c.image_ok =  0 THEN 'disabled'
+    WHEN c.image_ok <  0 THEN 'not supported'
     WHEN EXISTS (
       SELECT 1
       FROM backups b
@@ -98,8 +99,8 @@ SELECT
       WHERE b.clientid = c.id
         AND COALESCE(l.image,0) > 0
         AND b.complete = 1
-        AND b.done = 1
-        AND l.errors <= 100
+        AND b.done     = 1
+        AND l.errors  <= 100
     ) THEN 'ok'
     WHEN EXISTS (
       SELECT 1
@@ -108,11 +109,9 @@ SELECT
       WHERE b.clientid = c.id
         AND COALESCE(l.image,0) > 0
         AND b.complete = 1
-        AND b.done = 1
-        AND l.errors > 100
+        AND b.done     = 1
+        AND l.errors  > 100
     ) THEN 'completed with issues'
-    WHEN c.image_ok =  0 THEN 'disabled'
-    WHEN c.image_ok <  0 THEN 'not supported'
     ELSE 'no recent backup'
   END                                           AS Status,
   'image'                                       AS Backup_Type,
@@ -122,8 +121,7 @@ SELECT
   0                                             AS Infos,
   ROUND(c.bytes_used_files   / 1024.0 / 1024.0, 1) AS Total_Used_Files_MB,
   ROUND(c.bytes_used_images  / 1024.0 / 1024.0, 1) AS Total_Used_Images_MB,
-  ROUND((c.bytes_used_files + c.bytes_used_images) / 1024.0 / 1024.0, 1)
-                                                  AS Total_Used_MB
+  ROUND((c.bytes_used_files + c.bytes_used_images) / 1024.0 / 1024.0, 1) AS Total_Used_MB
 FROM clients c
 
 ORDER BY Client, Backup_Type;
