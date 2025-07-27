@@ -28,7 +28,7 @@ Agent-based monitoring of UrBackup client backups:
 
 ```bash
 sudo apt-get update && sudo apt-get install -y sqlite3 jq```
-
+```
 ---
 ## 🛠️ Installation of `backup_report_json.sh`
 
