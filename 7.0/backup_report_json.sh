@@ -19,7 +19,6 @@ WITH latest_backups AS (
     COALESCE(l.errors, 0)   AS Errors,
     COALESCE(l.warnings, 0) AS Warnings,
     COALESCE(l.infos, 0)    AS Infos,
-    -- Neues Bool‑Flag für Image‑Backups
     CASE WHEN COALESCE(l.image, 0) > 0 THEN 1 ELSE 0 END AS is_image,
     c.lastseen,
     c.file_ok,
@@ -60,8 +59,8 @@ SELECT
     WHEN is_image = 1 THEN
       CASE
         WHEN image_ok >  0 THEN 'ok'
-        WHEN image_ok =  0 THEN 'disabled'
-        WHEN image_ok <  0 THEN 'not supported'
+        WHEN image_ok <  0 THEN 'disabled'
+        WHEN image_ok =  0 THEN 'not supported'
         ELSE 'unknown'
       END
     ELSE 'unknown'
@@ -90,8 +89,8 @@ SELECT
   'never'                                       AS Backup_Time,
   '0'                                           AS Backup_Timestamp,
   CASE
-    WHEN c.image_ok =  0 THEN 'disabled'
-    WHEN c.image_ok <  0 THEN 'not supported'
+    WHEN c.image_ok <  0 THEN 'disabled'
+    WHEN c.image_ok =  0 THEN 'not supported'
     WHEN EXISTS (
       SELECT 1
       FROM backups b
