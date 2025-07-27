@@ -34,20 +34,16 @@ WITH latest_backups AS (
     ) AS rn_valid
   FROM backups b
   JOIN clients c ON c.id = b.clientid
-  LEFT JOIN logs l   ON l.id = b.id
+  LEFT JOIN logs l ON l.id = b.id
 )
 
--- 1) Alle neuesten Backups (File + Image)
+-- 1) Aktuelle Backups (File + Image)
 SELECT
-  id                                            AS Backup_ID,
-  BaseClient
-    || CASE is_image WHEN 1 THEN ' Image-Backup' ELSE ' File-Backup' END AS Client,
-  CASE
-    WHEN strftime('%s','now') - strftime('%s', lastseen) < 600 THEN 'Yes'
-    ELSE 'No'
-  END                                           AS Online,
-  strftime('%Y-%m-%d %H:%M:%S', backuptime)     AS Backup_Time,
-  strftime('%s', backuptime)                   AS Backup_Timestamp,
+  id AS Backup_ID,
+  BaseClient || CASE is_image WHEN 1 THEN ' Image-Backup' ELSE ' File-Backup' END AS Client,
+  CASE WHEN strftime('%s','now') - strftime('%s', lastseen) < 600 THEN 'Yes' ELSE 'No' END AS Online,
+  strftime('%Y-%m-%d %H:%M:%S', backuptime) AS Backup_Time,
+  strftime('%s', backuptime)             AS Backup_Timestamp,
   CASE
     WHEN is_image = 0 THEN
       CASE
@@ -59,12 +55,12 @@ SELECT
     WHEN is_image = 1 THEN
       CASE
         WHEN image_ok >  0 THEN 'ok'
+        WHEN image_ok =  0 THEN 'no recent backup'
         WHEN image_ok <  0 THEN 'disabled'
-        WHEN image_ok =  0 THEN 'not supported'
         ELSE 'unknown'
       END
     ELSE 'unknown'
-  END                                           AS Status,
+  END AS Status,
   CASE is_image WHEN 1 THEN 'image' ELSE 'file' END AS Backup_Type,
   File_Size_MB,
   Errors,
@@ -78,22 +74,18 @@ WHERE rn_valid = 1
 
 UNION ALL
 
--- 2) Fehlende Image-Backups ergänzen, Status aus clients.image_ok
+-- 2) Fehlende Image-Backups ergänzen
 SELECT
-  0                                             AS Backup_ID,
-  c.name || ' Image-Backup'                     AS Client,
+  0 AS Backup_ID,
+  c.name || ' Image-Backup'            AS Client,
+  CASE WHEN strftime('%s','now') - strftime('%s', c.lastseen) < 600 THEN 'Yes' ELSE 'No' END AS Online,
+  'never'                              AS Backup_Time,
+  '0'                                  AS Backup_Timestamp,
   CASE
-    WHEN strftime('%s','now') - strftime('%s', c.lastseen) < 600 THEN 'Yes'
-    ELSE 'No'
-  END                                           AS Online,
-  'never'                                       AS Backup_Time,
-  '0'                                           AS Backup_Timestamp,
-  CASE
-    WHEN c.image_ok <  0 THEN 'disabled'
-    WHEN c.image_ok =  0 THEN 'not supported'
+    WHEN c.image_ok <   0 THEN 'disabled'
+    WHEN c.image_ok =  0 THEN 'no recent backup'
     WHEN EXISTS (
-      SELECT 1
-      FROM backups b
+      SELECT 1 FROM backups b
       JOIN logs l ON l.id = b.id
       WHERE b.clientid = c.id
         AND COALESCE(l.image,0) > 0
@@ -102,26 +94,50 @@ SELECT
         AND l.errors  <= 100
     ) THEN 'ok'
     WHEN EXISTS (
-      SELECT 1
-      FROM backups b
+      SELECT 1 FROM backups b
       JOIN logs l ON l.id = b.id
       WHERE b.clientid = c.id
         AND COALESCE(l.image,0) > 0
         AND b.complete = 1
         AND b.done     = 1
-        AND l.errors  > 100
+        AND l.errors  >  100
     ) THEN 'completed with issues'
-    ELSE 'no recent backup'
-  END                                           AS Status,
-  'image'                                       AS Backup_Type,
-  0                                             AS File_Size_MB,
-  0                                             AS Errors,
-  0                                             AS Warnings,
-  0                                             AS Infos,
+    ELSE 'unknown'
+  END                                  AS Status,
+  'image'                              AS Backup_Type,
+  0                                    AS File_Size_MB,
+  0                                    AS Errors,
+  0                                    AS Warnings,
+  0                                    AS Infos,
   ROUND(c.bytes_used_files   / 1024.0 / 1024.0, 1) AS Total_Used_Files_MB,
   ROUND(c.bytes_used_images  / 1024.0 / 1024.0, 1) AS Total_Used_Images_MB,
   ROUND((c.bytes_used_files + c.bytes_used_images) / 1024.0 / 1024.0, 1) AS Total_Used_MB
 FROM clients c
+
+UNION ALL
+
+-- 3) Fehlende File-Backups (nur bei no recent backup)
+SELECT
+  0 AS Backup_ID,
+  c.name || ' File-Backup'             AS Client,
+  CASE WHEN strftime('%s','now') - strftime('%s', c.lastseen) < 600 THEN 'Yes' ELSE 'No' END AS Online,
+  'never'                              AS Backup_Time,
+  '0'                                  AS Backup_Timestamp,
+  CASE
+    WHEN c.file_ok  =  0 THEN 'no recent backup'
+    WHEN c.file_ok  <  0 THEN 'completed with issues'
+    ELSE 'unknown'
+  END                                  AS Status,
+  'file'                               AS Backup_Type,
+  0                                    AS File_Size_MB,
+  0                                    AS Errors,
+  0                                    AS Warnings,
+  0                                    AS Infos,
+  ROUND(c.bytes_used_files   / 1024.0 / 1024.0, 1) AS Total_Used_Files_MB,
+  ROUND(c.bytes_used_images  / 1024.0 / 1024.0, 1) AS Total_Used_Images_MB,
+  ROUND((c.bytes_used_files + c.bytes_used_images) / 1024.0 / 1024.0, 1) AS Total_Used_MB
+FROM clients c
+WHERE c.file_ok = 0
 
 ORDER BY Client, Backup_Type;
 EOF
