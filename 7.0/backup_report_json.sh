@@ -19,7 +19,8 @@ WITH latest_backups AS (
     COALESCE(l.errors, 0)   AS Errors,
     COALESCE(l.warnings, 0) AS Warnings,
     COALESCE(l.infos, 0)    AS Infos,
-    COALESCE(l.image, 0)    AS image,
+    -- Neues Flag für Image-Backup: 1 wenn >0, sonst 0
+    CASE WHEN COALESCE(l.image, 0) > 0 THEN 1 ELSE 0 END AS is_image,
     c.lastseen,
     c.file_ok,
     c.image_ok,
@@ -27,7 +28,7 @@ WITH latest_backups AS (
     ROUND(c.bytes_used_images  / 1024.0 / 1024.0, 1) AS Total_Used_Images_MB,
     ROUND((c.bytes_used_files + c.bytes_used_images) / 1024.0 / 1024.0, 1) AS Total_Used_MB,
     ROW_NUMBER() OVER (
-      PARTITION BY b.clientid, COALESCE(l.image, 0)
+      PARTITION BY b.clientid, CASE WHEN COALESCE(l.image, 0) > 0 THEN 1 ELSE 0 END
       ORDER BY
         CASE WHEN complete = 1 AND done = 1 THEN 0 ELSE 1 END,
         b.backuptime DESC
@@ -37,11 +38,11 @@ WITH latest_backups AS (
   LEFT JOIN logs l   ON l.id = b.id
 )
 
--- 1) alle neuesten Backups (File + Image) mit Status aus clients.file_ok / image_ok
+-- 1) Alle neuesten Backups (File + Image) mit Status aus clients.file_ok / image_ok
 SELECT
   id                                            AS Backup_ID,
   BaseClient
-    || CASE image WHEN 1 THEN ' Image-Backup' ELSE ' File-Backup' END
+    || CASE is_image WHEN 1 THEN ' Image-Backup' ELSE ' File-Backup' END
                                                   AS Client,
   CASE
     WHEN strftime('%s','now') - strftime('%s', lastseen) < 600 THEN 'Yes'
@@ -50,14 +51,14 @@ SELECT
   strftime('%Y-%m-%d %H:%M:%S', backuptime)     AS Backup_Time,
   strftime('%s', backuptime)                   AS Backup_Timestamp,
   CASE
-    WHEN image = 0 THEN
+    WHEN is_image = 0 THEN
       CASE
         WHEN file_ok  >  0 THEN 'ok'
         WHEN file_ok  =  0 THEN 'no recent backup'
         WHEN file_ok  <  0 THEN 'completed with issues'
         ELSE 'unknown'
       END
-    WHEN image = 1 THEN
+    WHEN is_image = 1 THEN
       CASE
         WHEN image_ok >  0 THEN 'ok'
         WHEN image_ok =  0 THEN 'disabled'
@@ -66,7 +67,7 @@ SELECT
       END
     ELSE 'unknown'
   END                                           AS Status,
-  CASE image WHEN 1 THEN 'image' ELSE 'file' END AS Backup_Type,
+  CASE is_image WHEN 1 THEN 'image' ELSE 'file' END AS Backup_Type,
   File_Size_MB,
   Errors,
   Warnings,
@@ -79,7 +80,7 @@ WHERE rn_valid = 1
 
 UNION ALL
 
--- 2) fehlende Image-Backups ergänzen, Status aus clients.image_ok
+-- 2) Fehlende Image-Backups ergänzen, Status aus clients.image_ok
 SELECT
   0                                             AS Backup_ID,
   c.name || ' Image-Backup'                     AS Client,
@@ -95,7 +96,7 @@ SELECT
       FROM backups b
       JOIN logs l ON l.id = b.id
       WHERE b.clientid = c.id
-        AND l.image = 1
+        AND COALESCE(l.image,0) > 0
         AND b.complete = 1
         AND b.done = 1
         AND l.errors <= 100
@@ -105,7 +106,7 @@ SELECT
       FROM backups b
       JOIN logs l ON l.id = b.id
       WHERE b.clientid = c.id
-        AND l.image = 1
+        AND COALESCE(l.image,0) > 0
         AND b.complete = 1
         AND b.done = 1
         AND l.errors > 100
